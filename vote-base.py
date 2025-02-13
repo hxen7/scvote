@@ -23,7 +23,7 @@ def main():
     print("🟢 Iniciando Bot de Votação...")
 
     # -------------------------------
-    # 1) Conectar à rede Sepolia
+    # 1) Conectar à rede Base
     # -------------------------------
     print("🔗 Conectando à rede Base via RPC...")
     RPC_URL = "https://base.llamarpc.com"
@@ -31,9 +31,9 @@ def main():
 
     # Verificar conexão
     if web3.is_connected():
-        print("✅ Conexão bem-sucedida com a rede Lisk via RPC!")
+        print("✅ Conexão bem-sucedida com a rede Base via RPC!")
     else:
-        raise Exception("❌ Falha ao conectar na rede Sepolia via DRPC.")
+        raise Exception("❌ Falha ao conectar na rede Base via DRPC.")
 
     # -------------------------------
     # 2) Carregar Keystore
