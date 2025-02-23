@@ -1,21 +1,20 @@
-#Bloackchain: Monad
+#Blockchain: Monad
 
 from web3 import Web3
 from eth_account import Account
-import getpass
 import sys
-import random
 import time
-import json
+import secrets
+import getpass
 
 def fisher_yates_shuffle(start, end):
     """
-    Gera uma lista de números entre start e end e aplica o algoritmo Fisher-Yates
-    para embaralhar os intervalos de tempo.
+    Gera uma lista de números entre start e end e aplica o algoritmo Fisher-Yates,
+    utilizando CSPRNG para embaralhar os intervalos de tempo.
     """
     intervals = list(range(start, end + 1))
     for i in range(len(intervals) - 1, 0, -1):
-        j = random.randint(0, i)
+        j = secrets.randbelow(i + 1)  # Número aleatório seguro entre 0 e i (inclusive)
         intervals[i], intervals[j] = intervals[j], intervals[i]
     return intervals
 
@@ -23,24 +22,16 @@ def main():
     print("🟢 Iniciando Bot de Votação...")
 
     # -------------------------------
-    # 1) Conectar à rede Monad
+    # 1) Conectar à rede Monad via RPC
     # -------------------------------
     print("🔗 Conectando à rede Monad via RPC...")
-    RPC_URL = "https://monad-testnet.g.alchemy.com/v2/0qDSev0jq7JFssu6EA-rZgFzvebFj9xlF"
+    RPC_URL = "https://monad-testnet.g.alchemy.com/v2/0qDSev0jq7JFssu6EA-rZgFzvebFj9xl"
     web3 = Web3(Web3.HTTPProvider(RPC_URL))
     
-    if web3.is_connected():
-        print("✅ Conexão bem-sucedida com a rede Monad via RPC!")
-    else:
-        raise Exception("❌ Falha ao conectar na rede Monad via RPC.")
-
-    # Após confirmar a conexão, obtém o gas price
-    try:
-        gas_price = web3.eth.gas_price
-    except Exception as e:
-        print("❌ Erro ao obter gas price. Verifique sua chave de API e conexão.")
+    if not web3.is_connected():
+        print("❌ Falha ao conectar na rede Monad via RPC.")
         sys.exit(1)
-    higher_gas_price = int(gas_price * 1.1)
+    print("✅ Conexão bem-sucedida com a rede Monad via RPC!")
     
     # -------------------------------
     # 2) Carregar keystore
@@ -70,6 +61,8 @@ def main():
         print(f"❌ Erro inesperado ao descriptografar keystore: {e}")
         sys.exit(1)
 
+    print("🔑 Keystore descriptografado com sucesso!")
+
     # -------------------------------
     # 3) Endereço da Conta
     # -------------------------------
@@ -83,7 +76,7 @@ def main():
     # -------------------------------
     # 4) Configuração do contrato
     # -------------------------------
-    contract_address = '0x444f67710461d7b7e4da930253066703b5fDeE73'
+    contract_address = input("Digite o endereço do contrato: ")
     contract_address = web3.to_checksum_address(contract_address)
     contract_abi = [
         {"inputs": [], "name": "vote", "outputs": [], "stateMutability": "payable", "type": "function"},
@@ -101,7 +94,6 @@ def main():
             balance = web3.eth.get_balance(account.address)
             eth_balance = web3.from_wei(balance, 'ether')
             print(f"💰 Saldo da conta: {eth_balance} ETH")
-
             if balance == 0:
                 raise Exception("❌ Saldo insuficiente para pagar as taxas de rede.")
 
@@ -109,14 +101,25 @@ def main():
             nonce = web3.eth.get_transaction_count(account.address)
             print(f"🔄 Nonce atual: {nonce}")
 
+            # Estimativa dinâmica de gasPrice
+            print("⛽ Calculando preço do gás...")
+            base_gas_price = web3.eth.gas_price
+            gas_price = int(base_gas_price * 1.05)  # Aumenta 5% para garantir aceitação
+            print(f"⛽ Preço do gás sugerido: {web3.from_wei(gas_price, 'gwei')} Gwei")
+
             print("🛠️ Construindo transação...")
             tx = contract.functions.vote().build_transaction({
                 'from': account.address,
                 'nonce': nonce,
-                'value': 0,  # Ajuste se necessário
+                'value': 0,
                 'gas': 200000,
-                'gasPrice': higher_gas_price,
+                'gasPrice': gas_price
             })
+            print("📦 Transação construída:", tx)
+
+            # Estimativa de custo da transação
+            tx_cost = tx['gas'] * tx['gasPrice']
+            print(f"💸 Custo estimado da transação: {web3.from_wei(tx_cost, 'ether')} ETH")
 
             print("🔏 Assinando transação...")
             signed_tx = web3.eth.account.sign_transaction(tx, private_key)
@@ -131,7 +134,9 @@ def main():
             print(f"🎯 Transação confirmada no bloco: {receipt['blockNumber']}")
 
             return True
-
+        except ValueError as ve:
+            print(f"❌ Erro relacionado ao gás ou parâmetros: {ve}")
+            return False
         except Exception as e:
             print(f"❌ Erro ao votar: {e}")
             return False
@@ -142,23 +147,18 @@ def main():
     try:
         num_votes = int(input("Quantos votos você deseja enviar? "))
         print(f"\n🎲 Iniciando sequência de {num_votes} votos...")
-
         intervals = fisher_yates_shuffle(30, 60)
         successful_votes = 0
 
         for i in range(num_votes):
             print(f"\n🗳️ Iniciando voto {i + 1} de {num_votes}")
-
             if vote():
                 successful_votes += 1
-
-                if i < num_votes - 1:
+                if i < num_votes - 1:  # Não espera após o último voto
                     wait_time = intervals[i % len(intervals)]
                     print(f"\n⏳ Aguardando {wait_time} segundos antes do próximo voto...")
                     time.sleep(wait_time)
-
         print(f"\n✅ Processo concluído! Votos bem-sucedidos: {successful_votes}/{num_votes}")
-
     except ValueError:
         print("❌ Por favor, insira um número válido de votos.")
     except KeyboardInterrupt:
@@ -168,4 +168,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
