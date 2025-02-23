@@ -1,5 +1,5 @@
 # 1. SCVOTE
-Smart contract, a blockchain-based voting system. Users can participate by sending transactions.
+Smart Contracts, sistema de voto. Em que os participantes podem realizar iterações ao enviar transações.
 
 # 2. Deploy do Smart Contract
 Para realizar o deploy do smart contract - https://remix.ethereum.org/
