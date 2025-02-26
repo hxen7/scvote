@@ -25,7 +25,7 @@ def main():
     # 1) Conectar à rede Monad via RPC
     # -------------------------------
     print("🔗 Conectando à rede Monad via RPC...")
-    RPC_URL = "https://monad-testnet.g.alchemy.com/v2/0qDSev0jq7JFssu6EA-rZgFzvebFj9xl"
+    RPC_URL = "XXXX1"   #Adicione o RPC da Monad
     web3 = Web3(Web3.HTTPProvider(RPC_URL))
     
     if not web3.is_connected():
