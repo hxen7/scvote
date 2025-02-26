@@ -1,4 +1,4 @@
-# 1. SCVOTE
+## 1. SCVOTE
 Smart Contracts, sistema de voto. Em que os participantes podem realizar iterações ao enviar transações.
 
 ## 2. Deploy do Smart Contract
